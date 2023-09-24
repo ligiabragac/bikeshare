@@ -1,0 +1,68 @@
+-- Data Cleaning
+
+-- Drop the existing cleaned table if it exists
+DROP TABLE IF EXISTS trips23.last12clean;
+
+-- Create a new table with the cleaned and filtered data
+CREATE TABLE trips23.last12clean AS
+WITH cleaned_data AS (
+-- Ride ID Length: Remove rows with ride IDs that don't have a length of 16
+    SELECT *
+    FROM trips23.12m
+    WHERE LENGTH(ride_id) = 16
+),
+corrected_data AS (
+-- Rideable Type: Correct or categorize unexpected rideable types
+    SELECT *,
+        CASE
+            WHEN rideable_type = 'Moutain Bike' THEN 'Mountain Bike' -- Fixed typo
+            ELSE rideable_type
+        END AS corrected_rideable_type
+    FROM cleaned_data
+),
+imputed_data AS (
+-- Station Names and IDs: Impute missing values or remove rows
+    SELECT *,
+        IFNULL(end_lat, 37.7749) AS imputed_end_lat
+    FROM corrected_data
+),
+final_data AS (
+-- Location Data: Remove rows with missing end location and calculate duration_bucket in minutes
+    SELECT *,
+        TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS duration_minutes,
+        CASE
+            WHEN TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1440 THEN 'Longer than a day'
+            WHEN TIMESTAMP_DIFF(ended_at, started_at, MINUTE) <= 1 THEN 'Less than a minute'
+            ELSE 'Normal'
+        END AS calculated_duration_bucket
+    FROM imputed_data
+    WHERE NOT (end_lat IS NULL OR end_lng IS NULL) 
+          AND NOT (ride_id IS NULL 
+                   OR started_at IS NULL 
+                   OR ended_at IS NULL 
+                   OR member_casual IS NULL
+-- Add more conditions for other columns that should not be null
+          )
+)
+SELECT
+    ride_id,
+    corrected_rideable_type AS rideable_type,
+    started_at,
+    ended_at,
+    imputed_end_lat AS end_lat,
+    end_lng,
+    member_casual,
+    duration_minutes,
+    calculated_duration_bucket
+FROM final_data;
+
+-- Get the count of rows in the original and cleaned tables
+WITH original_rows AS (
+    SELECT COUNT(*) AS count FROM trips23.`12m`
+),
+cleaned_rows AS (
+    SELECT COUNT(*) AS count FROM trips23.last12clean
+)
+SELECT 'Number of rows in original table:' AS info, count AS count FROM original_rows
+UNION ALL
+SELECT 'Number of rows in cleaned table:' AS info, count AS count FROM cleaned_rows;
