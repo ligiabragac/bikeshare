@@ -1,0 +1,36 @@
+-- Data Combining
+
+DROP TABLE IF EXISTS `2023_tripdata.combined_data`;
+
+-- combining all 12 months data tables into a single table containing data from Jul 2022 to Jun 2023.
+
+CREATE TABLE IF NOT EXISTS `2023_tripdata.combined_data` AS (
+  SELECT * FROM `2022_tripdata.202307_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202208_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202209_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202210_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202211_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202212_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202301_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202302_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202303_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202304_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202305_tripdata`
+  UNION ALL
+  SELECT * FROM `2022_tripdata.202306_tripdata`
+);
+
+-- checking number of rows  
+
+SELECT COUNT(*)
+FROM `2023_tripdata.combined_data`;
